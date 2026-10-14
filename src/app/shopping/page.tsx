@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { ShoppingItem, Product } from "@/types/api";
 import { Plus, Check, Trash2, ShoppingCart, RefreshCw, Archive, Search } from "lucide-react";
+import { Modal } from "@/components/Modal";
+import { ConfirmModal } from "@/components/ConfirmModal";
+import { ToastContainer, useToast } from "@/components/Toast";
 
 export default function ShoppingPage() {
   const [items, setItems] = useState<ShoppingItem[]>([]);
@@ -16,6 +19,8 @@ export default function ShoppingPage() {
   const [selectedProductId, setSelectedProductId] = useState<number | "">("");
   const [quantity, setQuantity] = useState<number>(1);
   const [submitting, setSubmitting] = useState(false);
+  const [clearPickedOpen, setClearPickedOpen] = useState(false);
+  const { toasts, dismissToast, toast } = useToast();
 
   const loadData = async () => {
     try {
@@ -60,14 +65,16 @@ export default function ShoppingPage() {
   const handleClearPicked = async () => {
     const pickedItems = items.filter((i) => i.is_picked);
     if (pickedItems.length === 0) return;
-    if (!confirm(`¿Eliminar los ${pickedItems.length} artículos ya comprados?`)) return;
 
     try {
       const ids = pickedItems.map((i) => i.id);
       await api.deleteShoppingItems(ids);
       setItems((prev) => prev.filter((i) => !i.is_picked));
+      setClearPickedOpen(false);
+      toast.success("Artículos comprados eliminados");
     } catch (err) {
       console.error("Error clearing picked items:", err);
+      toast.error("No se pudieron eliminar los artículos comprados");
     }
   };
 
@@ -86,9 +93,10 @@ export default function ShoppingPage() {
       setShowAddModal(false);
       setSelectedProductId("");
       setQuantity(1);
+      toast.success("Artículo añadido a la lista");
     } catch (err) {
       console.error("Error adding shopping item:", err);
-      alert("Error al añadir a la lista");
+      toast.error("No se pudo añadir el artículo a la lista");
     } finally {
       setSubmitting(false);
     }
@@ -117,7 +125,7 @@ export default function ShoppingPage() {
         <div className="flex gap-2">
           {pickedItems.length > 0 && (
             <button
-              onClick={handleClearPicked}
+              onClick={() => setClearPickedOpen(true)}
               title="Limpiar artículos comprados"
               className="p-2 rounded-xl bg-white border border-slate-200 text-rose-600 hover:bg-rose-50 active:scale-95 transition-all shadow-sm"
             >
@@ -263,12 +271,14 @@ export default function ShoppingPage() {
       )}
 
       {/* Modal Añadir a la lista */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl space-y-4">
-            <h2 className="text-lg font-bold text-slate-900">Añadir a la Compra</h2>
-
+      <Modal
+        isOpen={showAddModal}
+        title="Añadir a la Compra"
+        titleId="shopping-modal-title"
+        onClose={() => setShowAddModal(false)}
+      >
             <form onSubmit={handleAddItem} className="space-y-3">
+
               <div>
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
                   Producto
@@ -326,9 +336,15 @@ export default function ShoppingPage() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
+      <ConfirmModal
+        isOpen={clearPickedOpen}
+        title="Limpiar lista comprada"
+        message={`¿Eliminar los ${items.filter((item) => item.is_picked).length} artículos ya comprados?`}
+        onCancel={() => setClearPickedOpen(false)}
+        onConfirm={handleClearPicked}
+      />
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }

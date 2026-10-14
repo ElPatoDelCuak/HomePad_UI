@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { Product } from "@/types/api";
-import { Plus, Pencil, Trash2, Package, RefreshCw, Search, X, Check } from "lucide-react";
+import { Plus, Pencil, Trash2, Package, RefreshCw, Search, Check } from "lucide-react";
+import { Modal } from "@/components/Modal";
+import { ConfirmModal } from "@/components/ConfirmModal";
+import { ToastContainer, useToast } from "@/components/Toast";
 
 const UNIT_OPTIONS = ["unidades", "kg", "g", "litros", "ml", "paquete", "lata", "bote"];
 
@@ -17,6 +20,8 @@ export default function ProductsPage() {
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
   const [unit, setUnit] = useState("unidades");
+  const [productToDelete, setProductToDelete] = useState<{ id: number; name: string } | null>(null);
+  const { toasts, dismissToast, toast } = useToast();
 
   const loadProducts = async () => {
     try {
@@ -60,22 +65,24 @@ export default function ProductsPage() {
         setProducts((prev) => [created, ...prev]);
       }
       setShowModal(false);
+      toast.success(editingProduct ? "Producto actualizado" : "Producto creado");
     } catch (err) {
       console.error("Error saving product:", err);
-      alert("Error al guardar el producto");
+      toast.error("No se pudo guardar el producto");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleDelete = async (id: number, productName: string) => {
-    if (!confirm(`Eliminar "${productName}"?`)) return;
+  const handleDelete = async (id: number) => {
     try {
       await api.deleteProduct(id);
       setProducts((prev) => prev.filter((p) => p.id !== id));
+      setProductToDelete(null);
+      toast.success("Producto eliminado");
     } catch (err) {
       console.error("Error deleting product:", err);
-      alert("Error al eliminar el producto.");
+      toast.error("No se pudo eliminar el producto");
     }
   };
 
@@ -151,7 +158,7 @@ export default function ProductsPage() {
                     <button onClick={() => openEditModal(product)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
                       <Pencil className="w-4 h-4" />
                     </button>
-                    <button onClick={() => handleDelete(product.id, product.name)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all">
+                    <button onClick={() => setProductToDelete({ id: product.id, name: product.name })} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all" aria-label={`Eliminar ${product.name}`}>
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -162,15 +169,14 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-t-3xl p-6 w-full max-w-md shadow-xl space-y-4 pb-10">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-slate-900">{editingProduct ? "Editar Producto" : "Nuevo Producto"}</h2>
-              <button onClick={() => setShowModal(false)} className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-all">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      <Modal
+        isOpen={showModal}
+        title={editingProduct ? "Editar Producto" : "Nuevo Producto"}
+        titleId="product-modal-title"
+        onClose={() => setShowModal(false)}
+        variant="sheet"
+        size="md"
+      >
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">Nombre *</label>
@@ -200,9 +206,16 @@ export default function ProductsPage() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
+
+      <ConfirmModal
+        isOpen={productToDelete !== null}
+        title="Eliminar producto"
+        message={`¿Eliminar "${productToDelete?.name ?? "este producto"}"?`}
+        onCancel={() => setProductToDelete(null)}
+        onConfirm={() => productToDelete && handleDelete(productToDelete.id)}
+      />
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }

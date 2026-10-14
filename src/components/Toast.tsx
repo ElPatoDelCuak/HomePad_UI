@@ -35,6 +35,8 @@ function ToastItem({ toast, onDismiss }: ToastProps) {
       )}
       <span className="flex-1">{toast.message}</span>
       <button
+        type="button"
+        aria-label="Cerrar notificación"
         onClick={() => onDismiss(toast.id)}
         className="opacity-70 hover:opacity-100 transition-opacity"
       >

@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { InventoryItem, Product } from "@/types/api";
 import { Plus, Minus, Trash2, ShoppingBag, AlertCircle, RefreshCw, Calendar, Search } from "lucide-react";
+import { Modal } from "@/components/Modal";
+import { ConfirmModal } from "@/components/ConfirmModal";
+import { ToastContainer, useToast } from "@/components/Toast";
 
 export default function InventoryPage() {
   const [items, setItems] = useState<InventoryItem[]>([]);
@@ -17,6 +20,8 @@ export default function InventoryPage() {
   const [quantity, setQuantity] = useState<number>(1);
   const [expirationDate, setExpirationDate] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<number | null>(null);
+  const { toasts, dismissToast, toast } = useToast();
 
   const loadData = async () => {
     try {
@@ -41,7 +46,7 @@ export default function InventoryPage() {
   const handleUpdateQty = async (item: InventoryItem, delta: number) => {
     const newQty = Math.max(0, Number((item.quantity + delta).toFixed(2)));
     if (newQty === 0) {
-      handleDeleteItem(item.id);
+      setItemToDelete(item.id);
       return;
     }
     try {
@@ -53,12 +58,14 @@ export default function InventoryPage() {
   };
 
   const handleDeleteItem = async (id: number) => {
-    if (!confirm("¿Eliminar este artículo del inventario?")) return;
     try {
       await api.deleteInventoryItem(id);
       setItems((prev) => prev.filter((i) => i.id !== id));
+      setItemToDelete(null);
+      toast.success("Artículo eliminado del inventario");
     } catch (err) {
       console.error("Error deleting item:", err);
+      toast.error("No se pudo eliminar el artículo");
     }
   };
 
@@ -68,10 +75,10 @@ export default function InventoryPage() {
         product_id: item.product_id,
         quantity: 1,
       });
-      alert(`¡${item.product?.name || "Producto"} añadido a la lista de la compra!`);
+      toast.success(`${item.product?.name || "Producto"} añadido a la lista de la compra`);
     } catch (err) {
       console.error("Error adding to shopping list:", err);
-      alert("Error al añadir a la lista de la compra");
+      toast.error("No se pudo añadir a la lista de la compra");
     }
   };
 
@@ -91,9 +98,10 @@ export default function InventoryPage() {
       setSelectedProductId("");
       setQuantity(1);
       setExpirationDate("");
+      toast.success("Artículo añadido al inventario");
     } catch (err) {
       console.error("Error adding inventory item:", err);
-      alert("Error al guardar en el inventario");
+      toast.error("No se pudo guardar en el inventario");
     } finally {
       setSubmitting(false);
     }
@@ -239,8 +247,9 @@ export default function InventoryPage() {
                     <ShoppingBag className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => handleDeleteItem(item.id)}
+                    onClick={() => setItemToDelete(item.id)}
                     title="Eliminar"
+                    aria-label={`Eliminar ${item.product?.name || "artículo"}`}
                     className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -253,12 +262,14 @@ export default function InventoryPage() {
       )}
 
       {/* Modal Añadir Artículo */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl space-y-4">
-            <h2 className="text-lg font-bold text-slate-900">Añadir a Despensa</h2>
-
+      <Modal
+        isOpen={showAddModal}
+        title="Añadir a Despensa"
+        titleId="inventory-modal-title"
+        onClose={() => setShowAddModal(false)}
+      >
             <form onSubmit={handleAddItem} className="space-y-3">
+
               <div>
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
                   Producto
@@ -328,9 +339,16 @@ export default function InventoryPage() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
+
+      <ConfirmModal
+        isOpen={itemToDelete !== null}
+        title="Eliminar artículo"
+        message="¿Quieres eliminar este artículo del inventario?"
+        onCancel={() => setItemToDelete(null)}
+        onConfirm={() => itemToDelete !== null && handleDeleteItem(itemToDelete)}
+      />
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }

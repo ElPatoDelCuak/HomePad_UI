@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { AlertTriangle } from "lucide-react";
+import { Modal } from "@/components/Modal";
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -26,20 +27,22 @@ export function ConfirmModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
-        <div className="flex flex-col items-center text-center space-y-3">
+    <Modal
+      isOpen={isOpen}
+      title={title}
+      titleId="confirm-modal-title"
+      onClose={onCancel}
+    >
+      <div className="space-y-4">
+        <div className="flex items-center gap-3 text-left">
           <div
-            className={`w-12 h-12 rounded-full flex items-center justify-center ${
+            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${
               variant === "danger" ? "bg-rose-50 text-rose-600" : "bg-amber-50 text-amber-600"
             }`}
           >
-            <AlertTriangle className="w-6 h-6" />
+            <AlertTriangle className="h-6 w-6" aria-hidden="true" />
           </div>
-          <div>
-            <h3 className="text-base font-bold text-slate-900">{title}</h3>
-            <p className="text-sm text-slate-500 mt-1">{message}</p>
-          </div>
+          <p className="text-sm text-slate-500">{message}</p>
         </div>
 
         <div className="flex gap-2">
@@ -61,6 +64,6 @@ export function ConfirmModal({
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

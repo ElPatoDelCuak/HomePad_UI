@@ -1,11 +1,16 @@
 ﻿import type { Metadata, Viewport } from "next";
 import { Navigation } from "@/components/Navigation";
+import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "HomePad - Hogar & Compras",
   description: "Gestor familiar de despensa e inventario doméstico",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.svg",
+    apple: "/apple-touch-icon.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -16,8 +21,6 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: "cover",
   themeColor: "#059669",
 };
@@ -29,9 +32,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className="min-h-screen bg-slate-50 text-slate-900 pb-20 select-none">
+      <body className="min-h-screen bg-slate-50 text-slate-900 pb-20">
         <main className="max-w-md mx-auto min-h-screen relative">{children}</main>
         <Navigation />
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );
