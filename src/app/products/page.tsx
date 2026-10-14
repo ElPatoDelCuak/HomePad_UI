@@ -134,7 +134,7 @@ export default function ProductsPage() {
           <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
             <Package className="w-6 h-6" />
           </div>
-          <p className="text-base font-semibold text-slate-800">{search ? "Sin resultados" : "Sin productos aun"}</p>
+          <p className="text-base font-semibold text-slate-800">{search ? "Sin resultados" : "Sin productos aún"}</p>
           {!search && (
             <button onClick={openCreateModal} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-all">
               <Plus className="w-4 h-4" />Crear primer producto
