@@ -35,7 +35,10 @@ export default function ProductsPage() {
     }
   };
 
-  useEffect(() => { loadProducts(); }, []);
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadProducts(), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const openCreateModal = () => {
     setEditingProduct(null);

@@ -40,7 +40,8 @@ export default function InventoryPage() {
   };
 
   useEffect(() => {
-    loadData();
+    const timer = window.setTimeout(() => void loadData(), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const handleUpdateQty = async (item: InventoryItem, delta: number) => {

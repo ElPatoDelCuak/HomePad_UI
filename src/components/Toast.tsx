@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CheckCircle, XCircle, X } from "lucide-react";
 
 export type ToastType = "success" | "error";
@@ -17,14 +17,33 @@ interface ToastProps {
 }
 
 function ToastItem({ toast, onDismiss }: ToastProps) {
+  const [isExiting, setIsExiting] = useState(false);
+  const dismissTimer = useRef<number | null>(null);
+  const isExitingRef = useRef(false);
+  const onDismissRef = useRef(onDismiss);
+
   useEffect(() => {
-    const timer = setTimeout(() => onDismiss(toast.id), 3500);
-    return () => clearTimeout(timer);
-  }, [toast.id, onDismiss]);
+    onDismissRef.current = onDismiss;
+  }, [onDismiss]);
+
+  const dismissWithAnimation = useCallback(() => {
+    if (isExitingRef.current) return;
+    isExitingRef.current = true;
+    setIsExiting(true);
+    dismissTimer.current = window.setTimeout(() => onDismissRef.current(toast.id), 180);
+  }, [toast.id]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(dismissWithAnimation, 3500);
+    return () => {
+      window.clearTimeout(timer);
+      if (dismissTimer.current !== null) window.clearTimeout(dismissTimer.current);
+    };
+  }, [dismissWithAnimation]);
 
   return (
     <div
-      className={`flex items-center gap-3 px-4 py-3 rounded-2xl shadow-lg text-white text-sm font-medium min-w-[240px] max-w-[320px] ${
+      className={`${isExiting ? "toast-exit" : "toast-enter"} flex items-center gap-3 px-4 py-3 rounded-2xl shadow-lg text-white text-sm font-medium min-w-[240px] max-w-[320px] ${
         toast.type === "success" ? "bg-emerald-600" : "bg-rose-600"
       }`}
     >
@@ -37,7 +56,7 @@ function ToastItem({ toast, onDismiss }: ToastProps) {
       <button
         type="button"
         aria-label="Cerrar notificación"
-        onClick={() => onDismiss(toast.id)}
+        onClick={dismissWithAnimation}
         className="opacity-70 hover:opacity-100 transition-opacity"
       >
         <X className="w-4 h-4" />

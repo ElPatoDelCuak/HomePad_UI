@@ -39,7 +39,8 @@ export default function ShoppingPage() {
   };
 
   useEffect(() => {
-    loadData();
+    const timer = window.setTimeout(() => void loadData(), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const handleTogglePicked = async (item: ShoppingItem) => {

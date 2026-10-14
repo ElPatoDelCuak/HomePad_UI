@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 
 interface ModalProps {
@@ -27,20 +27,55 @@ export function Modal({
   variant = "center",
   size = "sm",
 }: ModalProps) {
+  const [isRendered, setIsRendered] = useState(isOpen);
+  const [isClosing, setIsClosing] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
+  const closeTimerRef = useRef<number | null>(null);
+  const requestCloseRef = useRef<() => void>(() => undefined);
 
   useEffect(() => {
     onCloseRef.current = onClose;
   }, [onClose]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (isOpen) {
+      const timer = window.setTimeout(() => {
+        setIsRendered(true);
+        setIsClosing(false);
+      }, 0);
+      return () => window.clearTimeout(timer);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    requestCloseRef.current = () => {
+      if (isClosing) return;
+      setIsClosing(true);
+      onCloseRef.current();
+      closeTimerRef.current = window.setTimeout(() => {
+        setIsRendered(false);
+        setIsClosing(false);
+      }, 220);
+    };
+  }, [isClosing]);
+
+  useEffect(() => {
+    if (!isRendered) return;
 
     previousActiveElement.current = document.activeElement as HTMLElement | null;
-    const previousOverflow = document.body.style.overflow;
+    const scrollY = window.scrollY;
+    const previousBodyStyles = {
+      overflow: document.body.style.overflow,
+      position: document.body.style.position,
+      top: document.body.style.top,
+      width: document.body.style.width,
+    };
     document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = "100%";
 
     const focusableSelector =
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
@@ -54,7 +89,7 @@ export function Modal({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
-        onCloseRef.current();
+        requestCloseRef.current();
         return;
       }
 
@@ -83,21 +118,24 @@ export function Modal({
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
+      Object.assign(document.body.style, previousBodyStyles);
+      window.scrollTo(0, scrollY);
       previousActiveElement.current?.focus();
     };
-  }, [isOpen]);
+  }, [isRendered]);
 
-  if (!isOpen) return null;
+  if (!isRendered) return null;
 
   const isSheet = variant === "sheet";
 
   return (
     <div
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onCloseRef.current();
+        if (event.target === event.currentTarget) requestCloseRef.current();
       }}
-      className={`fixed inset-0 z-[60] flex justify-center bg-black/40 p-0 backdrop-blur-sm ${
+      className={`modal-overlay fixed inset-0 z-[60] flex justify-center bg-black/40 p-0 backdrop-blur-sm ${
+        isClosing ? "modal-overlay-exit" : "modal-overlay-enter"
+      } ${
         isSheet ? "items-end sm:items-center sm:p-4" : "items-center p-4"
       }`}
     >
@@ -106,7 +144,9 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className={`flex max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom))] w-full flex-col overflow-hidden bg-white shadow-xl ${sizeClasses[size]} ${
+        className={`modal-panel flex max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom))] w-full flex-col overflow-hidden bg-white shadow-xl ${sizeClasses[size]} ${
+          isClosing ? "modal-panel-exit" : isSheet ? "modal-sheet-enter" : "modal-dialog-enter"
+        } ${
           isSheet ? "rounded-t-3xl sm:max-h-[calc(100dvh-2rem)] sm:rounded-3xl" : "rounded-3xl"
         }`}
       >
@@ -117,7 +157,7 @@ export function Modal({
           <button
             type="button"
             aria-label="Cerrar ventana"
-            onClick={onClose}
+            onClick={() => requestCloseRef.current()}
             className="rounded-xl p-2 text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-600"
           >
             <X className="h-5 w-5" aria-hidden="true" />
