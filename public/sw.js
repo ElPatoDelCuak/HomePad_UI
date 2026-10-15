@@ -2,6 +2,7 @@ const CACHE_NAME = "homepad-shell-v1";
 const SHELL_ASSETS = ["/inventory", "/manifest.json", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (event) => {
+  // Cache only the app shell; API responses must remain fresh.
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_ASSETS)),
   );

@@ -64,6 +64,7 @@ export function Modal({
   useEffect(() => {
     if (!isRendered) return;
 
+    // iOS Safari can keep scrolling the page behind a modal unless the body is fixed.
     previousActiveElement.current = document.activeElement as HTMLElement | null;
     const scrollY = window.scrollY;
     const previousBodyStyles = {
@@ -95,6 +96,7 @@ export function Modal({
 
       if (event.key !== "Tab" || !panelRef.current) return;
 
+      // Keep keyboard focus inside the dialog for keyboard and assistive-technology users.
       const focusableElements = Array.from(
         panelRef.current.querySelectorAll<HTMLElement>(focusableSelector),
       ).filter((element) => !element.hasAttribute("disabled"));

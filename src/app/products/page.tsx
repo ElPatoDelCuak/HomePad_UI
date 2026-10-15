@@ -7,12 +7,14 @@ import { Plus, Pencil, Trash2, Package, RefreshCw, Search, Check } from "lucide-
 import { Modal } from "@/components/Modal";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { ToastContainer, useToast } from "@/components/Toast";
+import { ApiErrorState } from "@/components/ApiErrorState";
 
 const UNIT_OPTIONS = ["unidades", "kg", "g", "litros", "ml", "paquete", "lata", "bote"];
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -26,10 +28,12 @@ export default function ProductsPage() {
   const loadProducts = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await api.getProducts();
       setProducts(data);
     } catch (err) {
       console.error("Error loading products:", err);
+      setError(err instanceof Error ? err.message : "No se pudieron cargar los productos.");
     } finally {
       setLoading(false);
     }
@@ -102,7 +106,7 @@ export default function ProductsPage() {
   }, {} as Record<string, Product[]>);
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="space-y-4 p-4 lg:p-8">
       <div className="flex items-center justify-between pt-2">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Productos</h1>
@@ -129,12 +133,14 @@ export default function ProductsPage() {
           <RefreshCw className="w-6 h-6 animate-spin text-emerald-600" />
           <p className="text-sm text-slate-400 font-medium">Cargando productos...</p>
         </div>
+      ) : error ? (
+        <ApiErrorState message={error} onRetry={loadProducts} />
       ) : filteredProducts.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-200/80 p-8 text-center space-y-3 shadow-sm">
           <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
             <Package className="w-6 h-6" />
           </div>
-          <p className="text-base font-semibold text-slate-800">{search ? "Sin resultados" : "Sin productos aun"}</p>
+          <p className="text-base font-semibold text-slate-800">{search ? "Sin resultados" : "Sin productos aún"}</p>
           {!search && (
             <button onClick={openCreateModal} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-all">
               <Plus className="w-4 h-4" />Crear primer producto
@@ -142,7 +148,7 @@ export default function ProductsPage() {
           )}
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0">
           {Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([cat, catProducts]) => (
             <div key={cat} className="space-y-2">
               <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider px-1">{cat} ({catProducts.length})</h2>

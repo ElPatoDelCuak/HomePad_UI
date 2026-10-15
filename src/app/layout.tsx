@@ -32,8 +32,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className="min-h-screen bg-slate-50 text-slate-900 pb-20">
-        <main className="max-w-md mx-auto min-h-screen relative">{children}</main>
+      <body className="min-h-screen bg-slate-50 text-slate-900 pb-20 lg:pb-0">
+        <main className="mx-auto min-h-screen max-w-md relative lg:max-w-6xl lg:pt-20">{children}</main>
         <Navigation />
         <ServiceWorkerRegistration />
       </body>

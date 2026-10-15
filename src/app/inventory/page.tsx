@@ -7,11 +7,13 @@ import { Plus, Minus, Trash2, ShoppingBag, AlertCircle, RefreshCw, Calendar, Sea
 import { Modal } from "@/components/Modal";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { ToastContainer, useToast } from "@/components/Toast";
+import { ApiErrorState } from "@/components/ApiErrorState";
 
 export default function InventoryPage() {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
 
@@ -26,6 +28,7 @@ export default function InventoryPage() {
   const loadData = async () => {
     try {
       setLoading(true);
+      setError(null);
       const [inventoryData, productsData] = await Promise.all([
         api.getInventory(),
         api.getProducts(),
@@ -34,6 +37,7 @@ export default function InventoryPage() {
       setProducts(productsData);
     } catch (err) {
       console.error("Error loading inventory:", err);
+      setError(err instanceof Error ? err.message : "No se pudo cargar el inventario.");
     } finally {
       setLoading(false);
     }
@@ -116,7 +120,7 @@ export default function InventoryPage() {
   });
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="space-y-4 p-4 lg:p-8">
       {/* Header */}
       <div className="flex items-center justify-between pt-2">
         <div>
@@ -158,6 +162,8 @@ export default function InventoryPage() {
           <RefreshCw className="w-6 h-6 animate-spin text-emerald-600" />
           <p className="text-sm text-slate-400 font-medium">Cargando despensa...</p>
         </div>
+      ) : error ? (
+        <ApiErrorState message={error} onRetry={loadData} />
       ) : filteredItems.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-200/80 p-8 text-center space-y-3 shadow-sm">
           <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
@@ -184,7 +190,7 @@ export default function InventoryPage() {
           )}
         </div>
       ) : (
-        <div className="space-y-2.5">
+        <div className="space-y-2.5 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0 xl:grid-cols-3">
           {filteredItems.map((item) => {
             const isExpiringSoon =
               item.expiration_date &&
